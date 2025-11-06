@@ -1,0 +1,38 @@
+{
+  "input": {
+    "workflow": {
+      "3": {
+        "inputs": {
+          "url_or_path": "https://YOUR-IMAGE-URL.jpg"
+        },
+        "class_type": "LoadImageFromUrlOrPath",
+        "_meta": { "title": "LoadImageFromUrlOrPath" }
+      },
+      "14": {
+        "inputs": { "model": "prs-eth/marigold-iid-lighting-v1-1" },
+        "class_type": "MarigoldModelLoader",
+        "_meta": { "title": "MarigoldModelLoader" }
+      },
+      "17": {
+        "inputs": {
+          "seed": 725933265007009,
+          "denoise_steps": 4,
+          "ensemble_size": 3,
+          "processing_resolution": 768,
+          "scheduler": "LCMScheduler",
+          "use_taesd_vae": false,
+          "keep_model_loaded": false,
+          "marigold_model": ["14", 0],
+          "image": ["3", 0]
+        },
+        "class_type": "MarigoldDepthEstimation_v2",
+        "_meta": { "title": "MarigoldDepthEstimation_v2" }
+      },
+      "22": {
+        "inputs": { "images": ["17", 0] },
+        "class_type": "PreviewImage",
+        "_meta": { "title": "Preview Image" }
+      }
+    }
+  }
+}
