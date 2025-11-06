@@ -1,0 +1,9 @@
+runpod
+torch==2.3.1+cu121; sys_platform == 'linux'
+torchvision==0.18.1+cu121; sys_platform == 'linux'
+--extra-index-url https://download.pytorch.org/whl/cu121
+huggingface_hub>=0.23.0
+safetensors
+Pillow
+numpy
+opencv-python-headless
