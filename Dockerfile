@@ -1,53 +1,44 @@
-# RunPod ComfyUI worker base (serverless-compatible)
+# --- Base: RunPod ComfyUI serverless worker ---
 FROM runpod/worker-comfyui:5.5.0-base
 
-# Keep logs unbuffered; smaller pip installs
+# Quiet/fast pip, unbuffered logs
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# (Optional) Utilities & git-lfs for any nodes that need it
+# We will run installs as root (the base image may not have an 'app' user)
 USER root
+
+# --- Small OS utilities (git + git-lfs for node repos) ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git git-lfs curl ca-certificates procps \
  && git lfs install \
  && rm -rf /var/lib/apt/lists/*
-USER app
 
-# ---- Install your custom nodes ----
+# --- Custom nodes baked into the image ---
 
-# 1) Marigold custom node (as you already had)
-#    This installs the node code; weights will be pulled at runtime via HF.
+# 1) Marigold custom node (code only; weights pulled at runtime via HF)
+#    If this ever fails, the --exit-on-fail ensures the build stops with a clear error.
 RUN comfy node install --exit-on-fail comfyui-marigold@1.0.1
 
-# 2) URL loader node (lets a workflow load an image from https:// URL)
+# 2) URL loader node: allows loading images from https:// (used by your workflow)
 RUN git clone https://github.com/tsogzark/ComfyUI-load-image-from-url \
     /comfyui/custom_nodes/ComfyUI-load-image-from-url
 
-# (Optional) Other commonly used packs:
-# RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui \
-#     /comfyui/custom_nodes/was-node-suite-comfyui
-# RUN pip install -r /comfyui/custom_nodes/was-node-suite-comfyui/requirements.txt
-
-# ---- Python deps some nodes/utilities rely on ----
+# --- Extra Python deps some nodes/utilities rely on (keep minimal) ---
 RUN pip install --no-cache-dir \
-    huggingface_hub>=0.23.0 \
+    "huggingface_hub>=0.23.0" \
     safetensors \
     Pillow \
     numpy \
     opencv-python-headless
 
-# ---- Model strategy ----
-# Do NOT bake gated weights into the image. Provide token at runtime as a worker secret.
-# The marigold node will download weights when the workflow references:
-#    prs-eth/marigold-iid-lighting-v1-1
+# --- Model strategy ---
+# Provide your HF token at *runtime* as a worker secret so the Marigold model can be pulled.
 ENV HUGGING_FACE_HUB_TOKEN=""
 
-# Persist model cache between runs (RunPod serverless volume)
+# Persist model/cache between runs on serverless workers
 VOLUME ["/runpod-volume"]
 
-# If you ever want to ship a local sample input file, uncomment this:
-# COPY input/ /comfyui/input/
-
 # NOTE:
-# - Do NOT change CMD/ENTRYPOINT; the base image already starts the serverless worker
-#   that consumes the JSON "Export (API)" workflow you POST to the endpoint.
+# Do not override CMD/ENTRYPOINT; the base image already starts the serverless
+# ComfyUI worker that executes your Export(API) workflow JSON.
